@@ -2,4 +2,7 @@ module github.com/muhreeowki/mchat
 
 go 1.22.5
 
-require golang.org/x/net v0.29.0 // indirect
+require (
+	github.com/lib/pq v1.10.9 // indirect
+	golang.org/x/net v0.29.0 // indirect
+)

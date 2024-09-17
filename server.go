@@ -11,14 +11,16 @@ import (
 )
 
 type ChatServer struct {
-	listenAddr string
 	conns      map[net.Conn]bool
+	store      Storage
+	listenAddr string
 }
 
-func NewChatServer(listenAddr string) *ChatServer {
+func NewChatServer(listenAddr string, store Storage) *ChatServer {
 	return &ChatServer{
-		listenAddr: listenAddr,
 		conns:      make(map[net.Conn]bool),
+		store:      store,
+		listenAddr: listenAddr,
 	}
 }
 
@@ -45,7 +47,9 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 	}()
 
 	buf := make([]byte, 1024)
+
 	for {
+		// Read the message from the client
 		n, err := conn.Read(buf)
 		if err != nil {
 			if err == io.EOF {
@@ -54,14 +58,17 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 			fmt.Printf("read error: %s\n", err)
 			return
 		}
-
+		// Unmarshal the Message
 		msg, err := UnmarshalMessage(buf[:n])
 		if err != nil {
 			fmt.Printf("unmarshal error: %s\n", err)
 			return
 		}
-		msg.Datetime = time.Now()
-
+		// Set the message time
+		msg.Datetime = time.Now().UTC().Truncate(time.Minute)
+		// Create the message in the DB (go routine)
+		go s.store.CreateMessage(msg)
+		// Broadcast the message the the other connected clients
 		fmt.Printf("message: %+v\n", msg)
 		s.broadcast(msg)
 	}
@@ -70,7 +77,7 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 func (s *ChatServer) broadcast(msg *Message) {
 	for conn := range s.conns {
 		go func(conn net.Conn, msg *Message) {
-			if _, err := fmt.Fprintf(conn, "%s | %s: %s", msg.Datetime, msg.From, msg.Payload); err != nil {
+			if err := WriteMessage(conn, msg); err != nil {
 				fmt.Printf("broadcast write error: %s\n", err)
 				return
 			}
