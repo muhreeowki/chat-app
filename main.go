@@ -2,12 +2,12 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	listenAddr := ":3000"
 	store, err := NewPostgresStore()
 	if err != nil {
 		log.Fatalf("error occured: %+v\n", err)
@@ -21,9 +21,25 @@ func main() {
 		log.Fatalf("error occured: %+v\n", err)
 	}
 
-	server := NewChatServer(listenAddr, store)
+	chatServer := NewChatServer(":3000", store)
+	restServer := NewJSONRESTServer(":8080", store)
 
-	if err := server.Run(); err != nil {
-		log.Fatalf("error occured: %+v\n", err)
-	}
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
+
+	go func() {
+		if err := chatServer.Run(); err != nil {
+			log.Fatalf("failed to run chatServer: %s\n", err)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		if err := restServer.Run(); err != nil {
+			log.Fatalf("failed to run restServer: %s\n", err)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 }

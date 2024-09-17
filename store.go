@@ -6,7 +6,7 @@ import (
 )
 
 type Storage interface {
-	GetMessages() ([]Message, error)
+	GetMessages() ([]*Message, error)
 	CreateMessage(*Message) error
 }
 
@@ -57,8 +57,23 @@ func (s *PostgresStore) CreateMessage(msg *Message) error {
 	return nil
 }
 
-func (s *PostgresStore) GetMessages() ([]Message, error) {
-	return []Message{}, nil
+func (s *PostgresStore) GetMessages() ([]*Message, error) {
+	query := `SELECT payload, sender, datetime FROM messages`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		fmt.Printf("get messages error: %s\n", err)
+		return nil, fmt.Errorf("get messages error")
+	}
+	messages := []*Message{}
+	for rows.Next() {
+		msg := new(Message)
+		if err := rows.Scan(&msg.Payload, &msg.Sender, &msg.Datetime); err != nil {
+			fmt.Printf("get messages error: %s\n", err)
+			continue
+		}
+		messages = append(messages, msg)
+	}
+	return messages, nil
 }
 
 func (s *PostgresStore) Drop() {
