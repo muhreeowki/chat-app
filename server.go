@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -38,9 +39,9 @@ func (s *ChatServer) HandleWSConn(conn *websocket.Conn) {
 func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 	var err error
 	defer func() {
-		fmt.Printf("dropping connection from: %+v, err: %+v\n", conn, err)
+		fmt.Printf("dropping connection from: %+v, err: %+v\n", conn.RemoteAddr(), err)
 		conn.Close()
-		s.conns[conn] = false
+		delete(s.conns, conn)
 	}()
 
 	buf := make([]byte, 1024)
@@ -51,25 +52,28 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 				return
 			}
 			fmt.Printf("read error: %s\n", err)
-			continue
+			return
 		}
 
-		msg := buf[:n]
-		fmt.Printf("message: %s\n", string(msg))
+		msg, err := UnmarshalMessage(buf[:n])
+		if err != nil {
+			fmt.Printf("unmarshal error: %s\n", err)
+			return
+		}
+		msg.Datetime = time.Now()
 
+		fmt.Printf("message: %+v\n", msg)
 		s.broadcast(msg)
 	}
 }
 
-func (s *ChatServer) broadcast(msg []byte) {
-	for conn, connected := range s.conns {
-		if connected {
-			go func(conn net.Conn, msg []byte) {
-				if _, err := conn.Write(msg); err != nil {
-					fmt.Printf("read error: %s\n", err)
-					return
-				}
-			}(conn, msg)
-		}
+func (s *ChatServer) broadcast(msg *Message) {
+	for conn := range s.conns {
+		go func(conn net.Conn, msg *Message) {
+			if _, err := fmt.Fprintf(conn, "%s | %s: %s", msg.Datetime, msg.From, msg.Payload); err != nil {
+				fmt.Printf("broadcast write error: %s\n", err)
+				return
+			}
+		}(conn, msg)
 	}
 }
