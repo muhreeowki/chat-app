@@ -21,7 +21,7 @@ func main() {
 		log.Fatalf("error occured: %+v\n", err)
 	}
 
-	chatServer := NewChatServer(":3000", store)
+	chatServer := NewChatServer(":4000", store)
 	restServer := NewJSONRESTServer(":8080", store)
 
 	wg := new(sync.WaitGroup)

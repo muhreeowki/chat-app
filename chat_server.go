@@ -69,7 +69,9 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 		// Set the message time
 		msg.Datetime = time.Now().UTC().Truncate(time.Minute)
 		// Create the message in the DB (go routine)
-		go s.store.CreateMessage(msg)
+		if err := s.store.CreateMessage(msg); err != nil {
+			WriteMessage(conn, nil)
+		}
 		// Broadcast the message the the other connected clients
 		fmt.Printf("message: %+v\n", msg)
 		s.broadcast(msg)

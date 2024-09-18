@@ -21,7 +21,11 @@ func UnmarshalMessage(data []byte) (*Message, error) {
 	return msg, nil
 }
 
-func WriteMessage(w io.Writer, msg *Message) error {
-	_, err := fmt.Fprintf(w, "[%s] %s: %s", msg.Datetime, msg.Sender, msg.Payload)
+func WriteMessage(w io.Writer, msg *Message) (err error) {
+	if msg != nil {
+		_, err = fmt.Fprintf(w, "[%s] %s: %s", msg.Datetime, msg.Sender, msg.Payload)
+	} else {
+		_, err = fmt.Fprintf(w, "error occured, try again.")
+	}
 	return err
 }
