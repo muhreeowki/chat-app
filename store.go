@@ -8,6 +8,9 @@ import (
 type Storage interface {
 	GetMessages() ([]*Message, error)
 	CreateMessage(*Message) error
+	GetUser(string) (*User, error)
+	GetUsers() ([]*UserJSONResponse, error)
+	CreateUser(*User) error
 }
 
 type PostgresStore struct {
@@ -44,7 +47,7 @@ func (s *PostgresStore) initUsersTable() error {
 	createUserTableQuery := `CREATE TABLE IF NOT EXISTS users (
     id SERIAL NOT NULL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    pass VARCHAR(100) NOT NULL
+    pass TEXT NOT NULL
   )`
 	_, err := s.db.Exec(createUserTableQuery)
 	return err
@@ -62,23 +65,41 @@ func (s *PostgresStore) initMessagesTable() error {
 }
 
 func (s *PostgresStore) CreateUser(usr *User) error {
-	query := `INSERT INTO users (username, pass) VALUES ($1, $2) RETURNING id, username`
+	query := `INSERT INTO users (username, pass) VALUES ($1, $2) RETURNING id`
 	row := s.db.QueryRow(query, usr.Username, usr.Password)
-	respUsr := new(User)
-	if err := row.Scan(&respUsr.Id, &respUsr.Username); err != nil {
+	if err := row.Scan(&usr.Id); err != nil {
 		return fmt.Errorf("failed to create user")
 	}
 	return nil
 }
 
 func (s *PostgresStore) GetUser(username string) (*User, error) {
-	query := `SELECT id, username FROM users WHERE username=$1 RETURNING id, password`
+	query := `SELECT id, username FROM users WHERE username=$1`
 	row := s.db.QueryRow(query, username)
 	usr := new(User)
 	if err := row.Scan(&usr.Id, &usr.Password); err != nil {
 		return nil, fmt.Errorf("failed to get user")
 	}
 	return usr, nil
+}
+
+func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
+	query := `SELECT id, username FROM users`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		fmt.Printf("GetUsers error: %s\n", err.Error())
+		return nil, fmt.Errorf("failed to get users")
+	}
+	usrs := []*UserJSONResponse{}
+	for rows.Next() {
+		usr := new(UserJSONResponse)
+		if err := rows.Scan(&usr.Id, &usr.Username); err != nil {
+			fmt.Printf("get messages error: %s\n", err)
+			continue
+		}
+		usrs = append(usrs, usr)
+	}
+	return usrs, nil
 }
 
 func (s *PostgresStore) CreateMessage(msg *Message) error {
@@ -110,7 +131,7 @@ func (s *PostgresStore) GetMessages() ([]*Message, error) {
 }
 
 func (s *PostgresStore) Drop() {
-	query := `DROP TABLE messages`
+	query := `DROP TABLE IF EXISTS messages, users`
 	_, err := s.db.Exec(query)
 	if err != nil {
 		fmt.Printf("db drop error: %s\n", err)

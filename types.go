@@ -4,13 +4,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 )
 
 type User struct {
+	Token    string
 	Username string
 	Password string
 	Id       int
+}
+
+type UserJSONResponse struct {
+	Id       int
+	Username string
+	Token    string
+}
+
+func UnmarshalUserJSON(r *http.Request) (*User, error) {
+	usr := new(User)
+	if err := json.NewDecoder(r.Body).Decode(usr); err != nil {
+		return nil, err
+	}
+	return usr, nil
 }
 
 type Message struct {
