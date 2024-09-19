@@ -1,9 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type JSONServer struct {
@@ -20,7 +21,10 @@ func NewJSONServer(listenAddr string, store Storage) *JSONServer {
 
 func (s *JSONServer) Run() error {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", withJWTAuth(makeHttpHandler(s.HandleGetMessages)))
+	router.HandleFunc("GET /messages", withJWTAuth(makeHttpHandler(s.HandleGetMessages)))
+	router.HandleFunc("GET /users", withJWTAuth(makeHttpHandler(s.HandleGetUsers)))
+	router.HandleFunc("POST /signup", withJWTAuth(makeHttpHandler(s.HandleSignUp)))
+	router.HandleFunc("POST /login", withJWTAuth(makeHttpHandler(s.HandleLogin)))
 
 	fmt.Printf("Mchat JSON server is live on: %s\n", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
@@ -34,15 +38,110 @@ func (s *JSONServer) HandleGetMessages(w http.ResponseWriter, r *http.Request) *
 			error: err.Error(),
 		}
 	}
-	writeJSON(w, http.StatusOK, messages)
+	WriteJSON(w, http.StatusOK, messages)
 	return nil
 }
 
 func (s *JSONServer) HandleSignUp(w http.ResponseWriter, r *http.Request) *JSONServerError {
+	reqData, err := UnmarshalUserJSON(r)
+	if err != nil {
+		fmt.Println(err)
+		return &JSONServerError{
+			code:  http.StatusBadRequest,
+			error: "invalid request data",
+		}
+	}
+	hashedPass, err := HashPassword(reqData.Password)
+	if err != nil {
+		return &JSONServerError{
+			code:  http.StatusInternalServerError,
+			error: err.Error(),
+		}
+	}
+	reqData.Password = hashedPass
+	// Create User
+	if err := s.store.CreateUser(reqData); err != nil {
+		return &JSONServerError{
+			code:  http.StatusInternalServerError,
+			error: err.Error(),
+		}
+	}
+	usr := &UserJSONResponse{
+		Id:       reqData.Id,
+		Username: reqData.Username,
+	}
+	usr.Token, err = CreateJWT(reqData)
+	if err != nil {
+		return &JSONServerError{
+			code:  http.StatusInternalServerError,
+			error: err.Error(),
+		}
+	}
+	// Return the user object and the jwt token
+	WriteJSON(w, http.StatusCreated, usr)
+	return nil
+}
+
+func (s *JSONServer) HandleLogin(w http.ResponseWriter, r *http.Request) *JSONServerError {
+	reqData, err := UnmarshalUserJSON(r)
+	if err != nil {
+		return &JSONServerError{
+			code:  500,
+			error: err.Error(),
+		}
+	}
+	// Check if user exists
+	dbUsr, err := s.store.GetUser(reqData.Username)
+	if err != nil {
+		return &JSONServerError{
+			code:  http.StatusInternalServerError,
+			error: err.Error(),
+		}
+	}
+	// Validate Password
+	valid := VerifyPassword(reqData.Password, dbUsr.Password)
+	if !valid {
+		return &JSONServerError{
+			code:  http.StatusUnauthorized,
+			error: "invalid credentials",
+		}
+	}
+
+	usr := &User{
+		Username: dbUsr.Username,
+		Id:       dbUsr.Id,
+	}
+	usr.Token, err = CreateJWT(dbUsr)
+	if err != nil {
+		return &JSONServerError{
+			code:  http.StatusInternalServerError,
+			error: err.Error(),
+		}
+	}
+
+	WriteJSON(w, http.StatusOK, usr)
+	return nil
+}
+
+func (s *JSONServer) HandleGetUsers(w http.ResponseWriter, r *http.Request) *JSONServerError {
+	usrs, err := s.store.GetUsers()
+	if err != nil {
+		return &JSONServerError{
+			code:  500,
+			error: err.Error(),
+		}
+	}
+	WriteJSON(w, http.StatusOK, usrs)
 	return nil
 }
 
 type JSONServerFunc func(w http.ResponseWriter, r *http.Request) *JSONServerError
+
+type CustomClaims struct {
+	Username string
+	Password string
+	jwt.RegisteredClaims
+}
 
 type JSONServerError struct {
 	error string
@@ -54,9 +153,8 @@ func (e *JSONServerError) Error() string {
 }
 
 func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
-	fmt.Println("checking JWT Token")
-
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("checking JWT Token")
 		handlerFunc(w, r)
 	}
 }
@@ -64,14 +162,8 @@ func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 func makeHttpHandler(serverFunc JSONServerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := serverFunc(w, r); err != nil {
-			writeJSON(w, err.code, err.Error())
+			WriteJSON(w, err.code, err.Error())
 			return
 		}
 	}
-}
-
-func writeJSON(w http.ResponseWriter, code int, v any) error {
-	w.WriteHeader(code)
-	w.Header().Add("Content-Type", "applictation/json")
-	return json.NewEncoder(w).Encode(v)
 }
