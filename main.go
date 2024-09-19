@@ -22,7 +22,7 @@ func main() {
 	}
 
 	chatServer := NewChatServer(":4000", store)
-	restServer := NewJSONRESTServer(":8080", store)
+	restServer := NewJSONServer(":8080", store)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)

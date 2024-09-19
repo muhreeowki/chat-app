@@ -6,33 +6,63 @@ import (
 	"net/http"
 )
 
-type JSONRESTServer struct {
+type JSONServerError struct {
+	error string
+	code  int
+}
+
+func (e *JSONServerError) Error() string {
+	return e.error
+}
+
+type JSONServer struct {
 	store      Storage
 	listenAddr string
 }
 
-func NewJSONRESTServer(listenAddr string, store Storage) *JSONRESTServer {
-	return &JSONRESTServer{
+func NewJSONServer(listenAddr string, store Storage) *JSONServer {
+	return &JSONServer{
 		store:      store,
 		listenAddr: listenAddr,
 	}
 }
 
-func (s *JSONRESTServer) Run() error {
+func (s *JSONServer) Run() error {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", s.HandleGetMessages)
+	router.HandleFunc("GET /", makeHttpHandler(s.HandleGetMessages))
 
-	fmt.Printf("Mchat REST server is live on: %s\n", s.listenAddr)
+	fmt.Printf("Mchat JSON server is live on: %s\n", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
 }
 
-func (s *JSONRESTServer) HandleGetMessages(w http.ResponseWriter, r *http.Request) {
+func (s *JSONServer) HandleGetMessages(w http.ResponseWriter, r *http.Request) *JSONServerError {
 	messages, err := s.store.GetMessages()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-		return
+		return &JSONServerError{
+			code:  500,
+			error: err.Error(),
+		}
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(messages)
+	writeJSON(w, http.StatusOK, messages)
+	return nil
+}
+
+func (s *JSONServer) HandleSignUp(w http.ResponseWriter, r *http.Request) *JSONServerError {
+	return nil
+}
+
+type JSONServerFunc func(w http.ResponseWriter, r *http.Request) *JSONServerError
+
+func makeHttpHandler(f JSONServerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := f(w, r); err != nil {
+			writeJSON(w, err.code, err.Error())
+			return
+		}
+	}
+}
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(v)
 }
