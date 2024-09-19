@@ -67,6 +67,7 @@ func (s *PostgresStore) initMessagesTable() error {
 func (s *PostgresStore) CreateUser(usr *User) error {
 	query := `INSERT INTO users (username, pass) VALUES ($1, $2) RETURNING id`
 	row := s.db.QueryRow(query, usr.Username, usr.Password)
+	fmt.Println("usr pass:", usr.Password)
 	if err := row.Scan(&usr.Id); err != nil {
 		return fmt.Errorf("failed to create user")
 	}
@@ -74,10 +75,10 @@ func (s *PostgresStore) CreateUser(usr *User) error {
 }
 
 func (s *PostgresStore) GetUser(username string) (*User, error) {
-	query := `SELECT id, username FROM users WHERE username=$1`
+	query := `SELECT id, username, pass FROM users WHERE username=$1`
 	row := s.db.QueryRow(query, username)
 	usr := new(User)
-	if err := row.Scan(&usr.Id, &usr.Password); err != nil {
+	if err := row.Scan(&usr.Id, &usr.Username, &usr.Password); err != nil {
 		return nil, fmt.Errorf("failed to get user")
 	}
 	return usr, nil

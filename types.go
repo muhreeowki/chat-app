@@ -16,9 +16,9 @@ type User struct {
 }
 
 type UserJSONResponse struct {
-	Id       int
 	Username string
 	Token    string
+	Id       int
 }
 
 func UnmarshalUserJSON(r *http.Request) (*User, error) {
