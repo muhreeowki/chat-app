@@ -31,18 +31,54 @@ func NewPostgresStore() (*PostgresStore, error) {
 }
 
 func (s *PostgresStore) Init() error {
-	query := `CREATE TABLE IF NOT EXISTS messages (
+	if err := s.initUsersTable(); err != nil {
+		return fmt.Errorf("users table init error: %s", err)
+	}
+	if err := s.initMessagesTable(); err != nil {
+		return fmt.Errorf("message table init error: %s", err)
+	}
+	return nil
+}
+
+func (s *PostgresStore) initUsersTable() error {
+	createUserTableQuery := `CREATE TABLE IF NOT EXISTS users (
+    id SERIAL NOT NULL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    pass VARCHAR(100) NOT NULL
+  )`
+	_, err := s.db.Exec(createUserTableQuery)
+	return err
+}
+
+func (s *PostgresStore) initMessagesTable() error {
+	createMessageTableQuery := `CREATE TABLE IF NOT EXISTS messages (
     id SERIAL NOT NULL PRIMARY KEY,
     payload TEXT NOT NULL,
     sender TEXT NOT NULL,
-    datetime TIMESTAMP DEFAULT NOW() 
+    datetime TIMESTAMP DEFAULT NOW()
   )`
-	_, err := s.db.Exec(query)
-	if err != nil {
-		fmt.Printf("db init error: %s\n", err)
-		return fmt.Errorf("db init error")
-	}
+	_, err := s.db.Exec(createMessageTableQuery)
 	return err
+}
+
+func (s *PostgresStore) CreateUser(usr *User) error {
+	query := `INSERT INTO users (username, pass) VALUES ($1, $2) RETURNING id, username`
+	row := s.db.QueryRow(query, usr.Username, usr.Password)
+	respUsr := new(User)
+	if err := row.Scan(&respUsr.Id, &respUsr.Username); err != nil {
+		return fmt.Errorf("failed to create user")
+	}
+	return nil
+}
+
+func (s *PostgresStore) GetUser(username string) (*User, error) {
+	query := `SELECT id, username FROM users WHERE username=$1 RETURNING id, password`
+	row := s.db.QueryRow(query, username)
+	usr := new(User)
+	if err := row.Scan(&usr.Id, &usr.Password); err != nil {
+		return nil, fmt.Errorf("failed to get user")
+	}
+	return usr, nil
 }
 
 func (s *PostgresStore) CreateMessage(msg *Message) error {
@@ -50,10 +86,8 @@ func (s *PostgresStore) CreateMessage(msg *Message) error {
 	row := s.db.QueryRow(query, msg.Payload, msg.Sender, msg.Datetime)
 	respMsg := new(Message)
 	if err := row.Scan(&respMsg.Payload, &respMsg.Sender, &respMsg.Datetime); err != nil {
-		fmt.Printf("create message error: %s\n", err)
-		return fmt.Errorf("create message init error")
+		return fmt.Errorf("failed to creat new message")
 	}
-	fmt.Printf("created message: %+v\n", respMsg)
 	return nil
 }
 
@@ -61,8 +95,7 @@ func (s *PostgresStore) GetMessages() ([]*Message, error) {
 	query := `SELECT payload, sender, datetime FROM messages`
 	rows, err := s.db.Query(query)
 	if err != nil {
-		fmt.Printf("get messages error: %s\n", err)
-		return nil, fmt.Errorf("get messages error")
+		return nil, fmt.Errorf("failed to get messages")
 	}
 	messages := []*Message{}
 	for rows.Next() {

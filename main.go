@@ -10,15 +10,15 @@ import (
 func main() {
 	store, err := NewPostgresStore()
 	if err != nil {
-		log.Fatalf("error occured: %+v\n", err)
+		log.Fatalf(err.Error())
 	}
 
 	// store.Drop()
 	// return
 
-	store.Init()
+	err = store.Init()
 	if err != nil {
-		log.Fatalf("error occured: %+v\n", err)
+		log.Fatalf(err.Error())
 	}
 
 	chatServer := NewChatServer(":4000", store)

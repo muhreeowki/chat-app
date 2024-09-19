@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+type User struct {
+	Username string
+	Password string
+	Id       int
+}
+
 type Message struct {
 	Datetime time.Time
 	Payload  string
