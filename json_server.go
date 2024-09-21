@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/rs/cors"
 )
 
 type JSONServer struct {
@@ -20,14 +21,23 @@ func NewJSONServer(listenAddr string, store Storage) *JSONServer {
 }
 
 func (s *JSONServer) Run() error {
-	router := http.NewServeMux()
-	router.HandleFunc("GET /messages", withJWTAuth(makeHttpHandler(s.HandleGetMessages)))
-	router.HandleFunc("GET /users", withJWTAuth(makeHttpHandler(s.HandleGetUsers)))
-	router.HandleFunc("POST /signup", withJWTAuth(makeHttpHandler(s.HandleSignUp)))
-	router.HandleFunc("POST /login", withJWTAuth(makeHttpHandler(s.HandleLogin)))
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /messages", withJWTAuth(makeHttpHandler(s.HandleGetMessages)))
+	mux.HandleFunc("GET /users", withJWTAuth(makeHttpHandler(s.HandleGetUsers)))
+	mux.HandleFunc("POST /signup", withJWTAuth(makeHttpHandler(s.HandleSignUp)))
+	mux.HandleFunc("POST /login", withJWTAuth(makeHttpHandler(s.HandleLogin)))
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3000/login"},
+		AllowCredentials: true,
+		// Enable Debugging for testing, consider disabling in production
+		Debug: true,
+	})
+
+	handler := c.Handler(mux)
 
 	fmt.Printf("Mchat JSON server is live on: %s\n", s.listenAddr)
-	return http.ListenAndServe(s.listenAddr, router)
+	return http.ListenAndServe(s.listenAddr, handler)
 }
 
 func (s *JSONServer) HandleGetMessages(w http.ResponseWriter, r *http.Request) *JSONServerError {
