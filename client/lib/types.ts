@@ -1,11 +1,23 @@
+import z from "zod";
+
 export interface Message {
-  Payload: string;
-  Sender: string;
-  Datetime: string;
+  payload: string;
+  sender: string;
+  datetime: string;
 }
 
 export interface User {
-  Id: string;
-  Username: string;
-  Token: string;
+  id: string;
+  username: string;
+  token: string;
 }
+
+export interface UserReqData {
+  username: string;
+  password: string;
+}
+
+export const LoginFormSchema = z.object({
+  username: z.string().min(2).max(50),
+  password: z.string().min(4).max(50),
+});

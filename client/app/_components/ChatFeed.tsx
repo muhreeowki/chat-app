@@ -11,7 +11,7 @@ import { CornerDownLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatMessage from "./ChatMessage";
 import ChatBox, { formSchema } from "./ChatBox";
-import { GetMessages } from "@/actions/getMessages";
+import { GetMessages } from "@/lib/actions";
 import { Message } from "@/lib/types";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -68,9 +68,9 @@ export default function ChatFeed() {
             {messages.map((msg, i) => (
               <ChatMessage
                 key={i}
-                payload={msg.Payload}
-                sender={msg.Sender}
-                datetime={msg.Datetime}
+                payload={msg.payload}
+                sender={msg.sender}
+                datetime={msg.datetime}
               />
             ))}
           </div>
