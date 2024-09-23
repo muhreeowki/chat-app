@@ -9,16 +9,16 @@ import (
 )
 
 type User struct {
-	Token    string
-	Username string
-	Password string
-	Id       int
+	Token    string `json:"token"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Id       int    `json:"id"`
 }
 
 type UserJSONResponse struct {
-	Username string
-	Token    string
-	Id       int
+	Username string `json:"username"`
+	Token    string `json:"token"`
+	Id       int    `json:"id"`
 }
 
 func UnmarshalUserJSON(r *http.Request) (*User, error) {
@@ -30,9 +30,9 @@ func UnmarshalUserJSON(r *http.Request) (*User, error) {
 }
 
 type Message struct {
-	Datetime time.Time
-	Payload  string
-	Sender   string
+	Datetime time.Time `json:"datetime"`
+	Payload  string    `json:"payload"`
+	Sender   string    `json:"sender"`
 }
 
 func UnmarshalMessage(data []byte) (*Message, error) {

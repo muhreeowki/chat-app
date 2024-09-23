@@ -11,10 +11,11 @@ export async function GetMessages(): Promise<Message[]> {
     const messages: Message[] = await fetch("http://localhost:8080/messages", {
       cache: "no-store",
       headers: {
-        Authenitication: token,
+        Authorization: token,
       },
     })
-      .then((value) => value.json())
+      .then((value) => value)
+      .then((data) => data.json())
       .catch((e) => console.error(e));
     console.log(messages);
     return messages;

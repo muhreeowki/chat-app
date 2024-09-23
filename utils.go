@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,20 +34,4 @@ func VerifyPassword(password, hash string) bool {
 		return false
 	}
 	return true
-}
-
-func CreateJWT(usr *User) (string, error) {
-	// Create JWT
-	claims := &CustomClaims{
-		Username: usr.Username,
-		Password: usr.Password,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			ID:        strconv.Itoa(usr.Id),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(usr.Password))
 }
