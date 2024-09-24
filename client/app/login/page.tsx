@@ -98,7 +98,7 @@ export default function LoginForm() {
                   onClick={() => setNewUser(false)}
                 >
                   Already have an account?{" "}
-                  <span className="text-blue-600 hover:underline hover:text-blue-800">
+                  <span className="text-blue-400 hover:underline hover:text-blue-500">
                     Login
                   </span>
                 </p>
@@ -108,7 +108,7 @@ export default function LoginForm() {
                   onClick={() => setNewUser(true)}
                 >
                   Don't have an account?{" "}
-                  <span className="text-blue-600 hover:underline hover:text-blue-800">
+                  <span className="text-blue-400 hover:underline hover:text-blue-500">
                     Create a New Account
                   </span>
                 </p>
