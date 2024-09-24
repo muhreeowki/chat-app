@@ -51,6 +51,7 @@ export default function ChatFeed() {
         description: "You need to login or create an accout to send messages.",
         variant: "destructive",
       });
+      redirect();
       return;
     }
     if (!connected || ws == undefined) {
@@ -70,13 +71,14 @@ export default function ChatFeed() {
     setMessages(await getMessages());
   }
 
+  async function redirect() {
+    const usr = await getUserData();
+    if (usr.token == "") {
+      window.location.href = "/login";
+    }
+  }
+
   useEffect(() => {
-    const redirect = async () => {
-      const usr = await getUserData();
-      if (usr.token == "") {
-        window.location.href = "/login";
-      }
-    };
     redirect();
   }, []);
 

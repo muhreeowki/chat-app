@@ -178,6 +178,7 @@ func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 		tokenString := r.Header.Get("Authorization")
 		_, err := validateJWT(tokenString)
 		if err != nil {
+			fmt.Println(err)
 			WriteJSON(w, http.StatusUnauthorized, JSONServerError{
 				code:  http.StatusUnauthorized,
 				error: "invalid token",
