@@ -31,23 +31,6 @@ Before you begin, ensure you have the following installed:
    cd chat-application
    ```
 
-2. Set up the environment variables:
-   Create a `.env` file in the root directory with the following content:
-
-   ```
-   JWT_SECRET="yoursecretkey"
-   DB_CONN_STR="user=postgres dbname=postgres password=chat sslmode=disable"
-   ```
-
-   Replace `user`, `dbname`, and `password` with your PostgreSQL credentials.
-
-3. If you don't have a PostgreSQL instance running, you can start one using Docker:
-   ```
-   docker run --name chat-postgres -e POSTGRES_PASSWORD=yourpassword -p 5432:5432 -d postgres
-   ```
-   Make sure to update the `.env` file with the correct credentials.
-
-
 ## Running the Application on Docker
 
 To start the entire application using Docker:
