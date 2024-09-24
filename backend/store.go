@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -36,9 +37,11 @@ func NewPostgresStore() (*PostgresStore, error) {
 
 func (s *PostgresStore) Init() error {
 	if err := s.initUsersTable(); err != nil {
+		log.Println("initialized users table")
 		return fmt.Errorf("users table init error: %s", err)
 	}
 	if err := s.initMessagesTable(); err != nil {
+		log.Println("initialized messages table")
 		return fmt.Errorf("message table init error: %s", err)
 	}
 	return nil
@@ -68,7 +71,6 @@ func (s *PostgresStore) initMessagesTable() error {
 func (s *PostgresStore) CreateUser(usr *User) error {
 	query := `INSERT INTO users (username, pass) VALUES ($1, $2) RETURNING id`
 	row := s.db.QueryRow(query, usr.Username, usr.Password)
-	fmt.Println("usr pass:", usr.Password)
 	if err := row.Scan(&usr.Id); err != nil {
 		return fmt.Errorf("failed to create user")
 	}
@@ -96,7 +98,7 @@ func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
 	for rows.Next() {
 		usr := new(UserJSONResponse)
 		if err := rows.Scan(&usr.Id, &usr.Username); err != nil {
-			fmt.Printf("get messages error: %s\n", err)
+			fmt.Printf("get users error: %s\n", err)
 			continue
 		}
 		usrs = append(usrs, usr)
@@ -136,6 +138,7 @@ func (s *PostgresStore) Drop() {
 	query := `DROP TABLE IF EXISTS messages, users`
 	_, err := s.db.Exec(query)
 	if err != nil {
-		fmt.Printf("db drop error: %s\n", err)
+		log.Printf("db drop error: %s\n", err)
 	}
+	log.Println("dropped message and user tables")
 }

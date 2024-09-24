@@ -26,18 +26,13 @@ func HashPassword(password string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("New encrpytion: ", string(bytes))
 	return string(bytes), err
 }
 
 // VerifyPassword verifies if the given password matches the stored hash.
 func VerifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if err != nil {
-		fmt.Printf("VerifyPassword error: %s\n", err)
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func createJWT(usr *User) (string, error) {

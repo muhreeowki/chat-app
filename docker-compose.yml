@@ -16,6 +16,7 @@ services:
       - chatnetwork
     depends_on:
       - chatdb
+    restart: on-failure
 
   chatdb:
     image: postgres

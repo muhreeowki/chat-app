@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -28,18 +28,18 @@ func (s *ChatServer) Run() error {
 	router := http.NewServeMux()
 	router.Handle("/", websocket.Handler(s.HandleWSConn))
 
-	fmt.Printf("Mchat CHAT server is live on: %s\n", s.listenAddr)
+	log.Printf("Mchat CHAT server is live on: %s\n", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
 }
 
 func (s *ChatServer) HandleWSConn(conn *websocket.Conn) {
-	fmt.Printf("incomming connection from: %+v\n", conn.RemoteAddr())
+	log.Printf("incomming connection from: %+v\n", conn.RemoteAddr())
 
 	// Check if the connection is authenticated
 	tokenString := conn.Request().Header.Get("Sec-WebSocket-Protocol")
 	_, err := validateJWT(tokenString)
 	if err != nil {
-		fmt.Printf("err invalid connection from: %+v\n", conn.RemoteAddr())
+		log.Fatalf("unauthenticated connection from: %+v\n", conn.RemoteAddr())
 		conn.Close()
 		return
 	}
@@ -52,7 +52,7 @@ func (s *ChatServer) HandleWSConn(conn *websocket.Conn) {
 func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 	var err error
 	defer func() {
-		fmt.Printf("dropping connection from: %+v, err: %+v\n", conn.RemoteAddr(), err)
+		log.Printf("dropping connection from: %+v, err: %+v\n", conn.RemoteAddr(), err)
 		conn.Close()
 		delete(s.conns, conn)
 	}()
@@ -66,13 +66,13 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 			if err == io.EOF {
 				return
 			}
-			fmt.Printf("read error: %s\n", err)
+			log.Printf("ws read error: %s\n", err)
 			return
 		}
 		// Unmarshal the Message
 		msg, err := UnmarshalMessage(buf[:n])
 		if err != nil {
-			fmt.Printf("unmarshal error: %s\n", err)
+			log.Printf("message unmarshal error: %s\n", err)
 			return
 		}
 		// Set the message time
@@ -82,7 +82,7 @@ func (s *ChatServer) ReadLoop(conn *websocket.Conn) {
 			WriteMessage(conn, nil)
 		}
 		// Broadcast the message the the other connected clients
-		fmt.Printf("message: %+v\n", msg)
+		log.Printf("new message from %s: %s\n", msg.Sender, msg.Payload)
 		s.broadcast(msg)
 	}
 }
@@ -91,7 +91,7 @@ func (s *ChatServer) broadcast(msg *Message) {
 	for conn := range s.conns {
 		go func(conn net.Conn, msg *Message) {
 			if err := WriteMessage(conn, msg); err != nil {
-				fmt.Printf("broadcast write error: %s\n", err)
+				log.Printf("broadcast write error: %s\n", err)
 				return
 			}
 		}(conn, msg)
