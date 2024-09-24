@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { Message, User, UserReqData } from "@/lib/types";
 
-export async function GetMessages(): Promise<Message[]> {
+export async function getMessages(): Promise<Message[]> {
   const token = cookies().get("authToken")?.value || "";
 
   console.log(token);
@@ -21,6 +21,15 @@ export async function GetMessages(): Promise<Message[]> {
     return messages;
   }
   return [];
+}
+
+export async function getUserData(): Promise<User> {
+  const data = cookies().get("userData")?.value || "";
+  if (data === "") {
+    return { id: "", username: "", token: "" };
+  }
+  const usr: User = JSON.parse(data);
+  return usr;
 }
 
 export async function login(
@@ -46,7 +55,7 @@ export async function login(
     return false;
   }
 
-  cookies().set("authToken", usr.token, { httpOnly: true });
+  cookies().set("userData", JSON.stringify(usr), { httpOnly: true });
   return true;
 }
 
@@ -73,6 +82,6 @@ export async function signup(
     return false;
   }
 
-  cookies().set("authToken", usr.token, { httpOnly: true });
+  cookies().set("userData", JSON.stringify(usr), { httpOnly: true });
   return true;
 }

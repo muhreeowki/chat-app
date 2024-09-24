@@ -11,8 +11,8 @@ import { CornerDownLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatMessage from "./ChatMessage";
 import ChatBox, { formSchema } from "./ChatBox";
-import { GetMessages } from "@/lib/actions";
-import { Message } from "@/lib/types";
+import { getMessages, getUserData } from "@/lib/actions";
+import { Message, User } from "@/lib/types";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -23,12 +23,14 @@ export default function ChatFeed() {
   const [ws, setWS] = useState<WebSocket | undefined>(undefined);
   const { toast } = useToast();
 
-  function handleSendMessage(data: z.infer<typeof formSchema>) {
-    if (connected) {
+  async function handleSendMessage(data: z.infer<typeof formSchema>) {
+    const user: User = await getUserData();
+
+    if (connected && user.username !== "" && user.token !== "") {
       ws?.send(
         JSON.stringify({
           Payload: data.message,
-          Sender: "Michele",
+          Sender: user.username,
         }),
       );
     } else {
@@ -48,13 +50,13 @@ export default function ChatFeed() {
         setConnected(false);
       };
       newWS.onmessage = async (event) => {
-        setMessages(await GetMessages());
+        setMessages(await getMessages());
         console.log(event.data);
       };
       setWS(newWS);
       setConnected(true);
     }
-    setMessages(await GetMessages());
+    setMessages(await getMessages());
   }
 
   return (
