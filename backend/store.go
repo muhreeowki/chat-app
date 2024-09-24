@@ -91,14 +91,14 @@ func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
 	query := `SELECT id, username FROM users`
 	rows, err := s.db.Query(query)
 	if err != nil {
-		fmt.Printf("GetUsers error: %s\n", err.Error())
+		log.Printf("get users error: %s\n", err.Error())
 		return nil, fmt.Errorf("failed to get users")
 	}
 	usrs := []*UserJSONResponse{}
 	for rows.Next() {
 		usr := new(UserJSONResponse)
 		if err := rows.Scan(&usr.Id, &usr.Username); err != nil {
-			fmt.Printf("get users error: %s\n", err)
+			log.Printf("get users error: %s\n", err)
 			continue
 		}
 		usrs = append(usrs, usr)

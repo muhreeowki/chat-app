@@ -3,18 +3,20 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/cors"
 )
 
 type JSONServer struct {
+	logger     *log.Logger
 	store      Storage
 	listenAddr string
 }
 
 func NewJSONServer(listenAddr string, store Storage) *JSONServer {
 	return &JSONServer{
+		logger:     log.New(os.Stdout, "[json-server] ", log.LstdFlags),
 		store:      store,
 		listenAddr: listenAddr,
 	}
@@ -22,10 +24,10 @@ func NewJSONServer(listenAddr string, store Storage) *JSONServer {
 
 func (s *JSONServer) Run() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /messages", withJWTAuth(makeHttpHandler(s.HandleGetMessages)))
-	mux.HandleFunc("GET /users", withJWTAuth(makeHttpHandler(s.HandleGetUsers)))
-	mux.HandleFunc("POST /signup", makeHttpHandler(s.HandleSignUp))
-	mux.HandleFunc("POST /login", makeHttpHandler(s.HandleLogin))
+	mux.HandleFunc("GET /messages", s.withJWTAuth(s.makeHttpHandler(s.HandleGetMessages)))
+	mux.HandleFunc("GET /users", s.withJWTAuth(s.makeHttpHandler(s.HandleGetUsers)))
+	mux.HandleFunc("POST /signup", s.makeHttpHandler(s.HandleSignUp))
+	mux.HandleFunc("POST /login", s.makeHttpHandler(s.HandleLogin))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://chatclient:3000"},
@@ -36,7 +38,7 @@ func (s *JSONServer) Run() error {
 
 	handler := c.Handler(mux)
 
-	log.Printf("Mchat JSON server is live on: %s\n", s.listenAddr)
+	s.logger.Printf("Mchat JSON server is live on: %s\n", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, handler)
 }
 
@@ -49,14 +51,14 @@ func (s *JSONServer) HandleGetMessages(w http.ResponseWriter, r *http.Request) *
 		}
 	}
 	WriteJSON(w, http.StatusOK, messages)
-	log.Printf("retrieved %d user messages", len(messages))
+	s.logger.Printf("retrieved %d user messages", len(messages))
 	return nil
 }
 
 func (s *JSONServer) HandleSignUp(w http.ResponseWriter, r *http.Request) *JSONServerError {
 	reqData, err := UnmarshalUserJSON(r)
 	if err != nil {
-		log.Printf("user unmarshal error: %s\n", err)
+		s.logger.Printf("user unmarshal error: %s\n", err)
 		return &JSONServerError{
 			code:  http.StatusBadRequest,
 			error: "invalid request data",
@@ -89,7 +91,7 @@ func (s *JSONServer) HandleSignUp(w http.ResponseWriter, r *http.Request) *JSONS
 		}
 	}
 	// Return the user object and the jwt token
-	log.Printf("created user with username: %s\n", usr.Username)
+	s.logger.Printf("created user with username: %s\n", usr.Username)
 	WriteJSON(w, http.StatusCreated, usr)
 	return nil
 }
@@ -97,7 +99,7 @@ func (s *JSONServer) HandleSignUp(w http.ResponseWriter, r *http.Request) *JSONS
 func (s *JSONServer) HandleLogin(w http.ResponseWriter, r *http.Request) *JSONServerError {
 	reqData, err := UnmarshalUserJSON(r)
 	if err != nil {
-		log.Printf("user unmarshal error: %s\n", err)
+		s.logger.Printf("user unmarshal error: %s\n", err)
 		return &JSONServerError{
 			code:  500,
 			error: "invalid request data",
@@ -106,7 +108,7 @@ func (s *JSONServer) HandleLogin(w http.ResponseWriter, r *http.Request) *JSONSe
 	// Check if user exists
 	dbUsr, err := s.store.GetUser(reqData.Username)
 	if err != nil {
-		log.Printf("user unmarshal error: %s\n", err)
+		s.logger.Printf("user unmarshal error: %s\n", err)
 		return &JSONServerError{
 			code:  http.StatusInternalServerError,
 			error: err.Error(),
@@ -127,14 +129,14 @@ func (s *JSONServer) HandleLogin(w http.ResponseWriter, r *http.Request) *JSONSe
 	}
 	usr.Token, err = createJWT(dbUsr)
 	if err != nil {
-		log.Printf("jwt create err: %s\n", err)
+		s.logger.Printf("jwt create err: %s\n", err)
 		return &JSONServerError{
 			code:  http.StatusInternalServerError,
 			error: err.Error(),
 		}
 	}
 
-	log.Printf("succesfully logged in: %s\n", usr.Username)
+	s.logger.Printf("succesfully logged in: %s\n", usr.Username)
 	WriteJSON(w, http.StatusOK, usr)
 	return nil
 }
@@ -142,7 +144,7 @@ func (s *JSONServer) HandleLogin(w http.ResponseWriter, r *http.Request) *JSONSe
 func (s *JSONServer) HandleGetUsers(w http.ResponseWriter, r *http.Request) *JSONServerError {
 	usrs, err := s.store.GetUsers()
 	if err != nil {
-		log.Printf("get users err: %s\n", err)
+		s.logger.Printf("get users err: %s\n", err)
 		return &JSONServerError{
 			code:  500,
 			error: err.Error(),
@@ -152,39 +154,22 @@ func (s *JSONServer) HandleGetUsers(w http.ResponseWriter, r *http.Request) *JSO
 	return nil
 }
 
-type JSONServerFunc func(w http.ResponseWriter, r *http.Request) *JSONServerError
-
-type CustomClaims struct {
-	Username string
-	Password string
-	jwt.RegisteredClaims
-}
-
-type JSONServerError struct {
-	error string
-	code  int
-}
-
-func (e *JSONServerError) Error() string {
-	return e.error
-}
-
-func makeHttpHandler(serverFunc JSONServerFunc) http.HandlerFunc {
+func (s *JSONServer) makeHttpHandler(serverFunc JSONServerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := serverFunc(w, r); err != nil {
 			WriteJSON(w, err.code, err.Error())
-			log.Printf("json api server err: %s\n", err)
+			s.logger.Printf("handler err: %s\n", err)
 			return
 		}
 	}
 }
 
-func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
+func (s *JSONServer) withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		_, err := validateJWT(tokenString)
 		if err != nil {
-			log.Printf("jwt auth err: %s\n", err)
+			s.logger.Printf("jwt auth err: %s\n", err)
 			WriteJSON(w, http.StatusUnauthorized, JSONServerError{
 				code:  http.StatusUnauthorized,
 				error: "invalid token",

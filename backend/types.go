@@ -6,7 +6,26 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+type JSONServerFunc func(w http.ResponseWriter, r *http.Request) *JSONServerError
+
+type CustomClaims struct {
+	Username string
+	Password string
+	jwt.RegisteredClaims
+}
+
+type JSONServerError struct {
+	error string
+	code  int
+}
+
+func (e *JSONServerError) Error() string {
+	return e.error
+}
 
 type User struct {
 	Token    string `json:"token"`
