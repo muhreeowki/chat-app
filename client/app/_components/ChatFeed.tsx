@@ -13,7 +13,7 @@ import ChatMessage from "./ChatMessage";
 import ChatBox, { formSchema } from "./ChatBox";
 import { getMessages, getUserData } from "@/lib/actions";
 import { Message, User } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -57,6 +57,7 @@ export default function ChatFeed() {
       const newWS = new WebSocket("ws://localhost:4000", user.token);
       newWS.onclose = (event) => {
         console.log(event);
+        setWS(undefined);
         setConnected(false);
       };
       newWS.onmessage = async (event) => {
@@ -68,6 +69,16 @@ export default function ChatFeed() {
     }
     setMessages(await getMessages());
   }
+
+  useEffect(() => {
+    const redirect = async () => {
+      const usr = await getUserData();
+      if (usr.token == "") {
+        window.location.href = "/login";
+      }
+    };
+    redirect();
+  }, []);
 
   return (
     <Card className="max-w-screen-md w-full">

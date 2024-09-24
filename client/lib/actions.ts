@@ -4,14 +4,14 @@ import { cookies } from "next/headers";
 import { Message, User, UserReqData } from "@/lib/types";
 
 export async function getMessages(): Promise<Message[]> {
-  const token = cookies().get("authToken")?.value || "";
+  const usr: User = await getUserData();
 
-  console.log(token);
-  if (token !== "") {
+  console.log(usr.token);
+  if (usr.token !== "") {
     const messages: Message[] = await fetch("http://localhost:8080/messages", {
       cache: "no-store",
       headers: {
-        Authorization: token,
+        Authorization: usr.token,
       },
     })
       .then((value) => value)
