@@ -34,6 +34,7 @@ export default function ChatFeed() {
         }),
       );
     } else {
+      ws?.close();
       toast({
         title: "Not Connected",
         description: "You are not connected to the chat server.",
@@ -43,8 +44,17 @@ export default function ChatFeed() {
   }
 
   async function handleConnect() {
+    const user: User = await getUserData();
+    if (user.username === "" || user.token === "") {
+      toast({
+        title: "Unauthorized",
+        description: "You need to login or create an accout to send messages.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!connected || ws == undefined) {
-      const newWS = new WebSocket("ws://localhost:4000");
+      const newWS = new WebSocket("ws://localhost:4000", user.token);
       newWS.onclose = (event) => {
         console.log(event);
         setConnected(false);

@@ -35,6 +35,15 @@ func (s *ChatServer) Run() error {
 func (s *ChatServer) HandleWSConn(conn *websocket.Conn) {
 	fmt.Printf("incomming connection from: %+v\n", conn.RemoteAddr())
 
+	// Check if the connection is authenticated
+	tokenString := conn.Request().Header.Get("Sec-WebSocket-Protocol")
+	_, err := validateJWT(tokenString)
+	if err != nil {
+		fmt.Printf("err invalid connection from: %+v\n", conn.RemoteAddr())
+		conn.Close()
+		return
+	}
+
 	s.conns[conn] = true
 
 	s.ReadLoop(conn)
