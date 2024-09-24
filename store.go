@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 )
 
 type Storage interface {
@@ -18,7 +19,7 @@ type PostgresStore struct {
 }
 
 func NewPostgresStore() (*PostgresStore, error) {
-	connStr := "user=postgres dbname=postgres password=mchat sslmode=disable"
+	connStr := os.Getenv("DB_CONN_STR")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
