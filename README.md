@@ -27,8 +27,8 @@ Before you begin, ensure you have the following installed:
 1. Clone the repository:
 
    ```
-   git clone https://github.com/muhreeowki/chat-application.git
-   cd chat-application
+   git clone https://github.com/muhreeowki/chat-app.git
+   cd chat-app
    ```
 
 ## Running the Application on Docker
