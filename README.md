@@ -47,44 +47,30 @@ Before you begin, ensure you have the following installed:
    ```
    Make sure to update the `.env` file with the correct credentials.
 
-## Running the Application
 
-The project uses a Makefile to simplify running both the backend and frontend.
+## Running the Application on Docker
 
-1. Start the backend:
+To start the entire application using Docker:
 
-   ```
-   make backend
-   ```
-
-2. In a new terminal, start the frontend:
-
-   ```
-   make client
-   ```
-
-3. Access the application by opening a web browser and navigating to `http://localhost:3000`
-
-## Docker Deployment
-
-To deploy the entire application using Docker:
-
-1. Build the Docker images:
-
-   ```
-   make docker-build
-   ```
-
-2. Start the containers:
+1. Build and Start the containers:
 
    ```
    make docker-up
    ```
+   This will start the containers and have them running in the background.
+   Access the application by opening a web browser and navigating to `http://localhost:3000`
 
-3. To stop and remove the containers:
+
+2. To stop and remove the containers:
    ```
    make docker-down
    ```
+   
+3. To remove the installed images form your system:
+   ```
+   make docker-rmi
+   ```
+
 
 ## Contributing
 
