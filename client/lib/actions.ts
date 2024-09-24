@@ -2,33 +2,34 @@
 
 import { cookies } from "next/headers";
 import { Message, User, UserReqData } from "@/lib/types";
+import axios from "axios";
 
 export async function getMessages(): Promise<Message[]> {
   const usr: User = await getUserData();
 
   if (usr.token !== "") {
-    const messages: Message[] = await fetch("http://chatserver:8080/messages", {
-      cache: "no-store",
+    const res = await axios.get("http://chatserver:8080/messages", {
       headers: {
         Authorization: usr.token,
       },
-    })
-      .then((value) => value)
-      .then((data) => data.json())
-      .catch((e) => {
-        console.error(e);
-        return [];
-      });
-    return messages;
+    });
+    if (res.status === 200) {
+      return res.data;
+    } else {
+      return [];
+    }
   }
+
   return [];
 }
 
 export async function getUserData(): Promise<User> {
   const data = cookies().get("userData")?.value || "";
+
   if (data === "") {
     return { id: "", username: "", token: "" };
   }
+
   const usr: User = JSON.parse(data);
   return usr;
 }
@@ -37,18 +38,16 @@ export async function login(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const usr: User = await fetch("http://chatserver:8080/login", {
-    method: "POST",
-    body: JSON.stringify({
-      username: username,
-      password: password,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => data)
-    .catch((e) => {
-      return false;
-    });
+  const res = await axios.post("http://chatserver:8080/login", {
+    username: username,
+    password: password,
+  });
+
+  if (res.status !== 200) {
+    return false;
+  }
+
+  const usr: User = res.data;
 
   if (!usr.token) {
     return false;
@@ -62,18 +61,16 @@ export async function signup(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const usr: User = await fetch("http://chatserver:8080/signup", {
-    method: "POST",
-    body: JSON.stringify({
-      username: username,
-      password: password,
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => data)
-    .catch((e) => {
-      return false;
-    });
+  const res = await axios.post("http://chatserver:8080/signup", {
+    username: username,
+    password: password,
+  });
+
+  if (res.status !== 201) {
+    return false;
+  }
+
+  const usr: User = res.data;
 
   if (!usr.token) {
     return false;

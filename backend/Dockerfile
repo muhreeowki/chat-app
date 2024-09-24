@@ -12,6 +12,6 @@ EXPOSE 8080
 
 ENV JWT_SECRET="LivingInUnionWithChrist"
 
-ENV DB_CONN_STR="user=postgres dbname=postgres password=chatapppassword sslmode=disable"
+ENV DB_CONN_STR="postgres://chatadmin:chatapppassword@chatdb/chatdb?sslmode=disable"
 
 CMD [ "./chatserver" ]
