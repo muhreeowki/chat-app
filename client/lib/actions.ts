@@ -8,7 +8,7 @@ export async function getMessages(): Promise<Message[]> {
   const usr: User = await getUserData();
 
   if (usr.token !== "") {
-    const res = await axios.get("http://chatserver:8080/messages", {
+    const res = await axios.get("http://localhost:8080/messages", {
       headers: {
         Authorization: usr.token,
       },
@@ -38,7 +38,7 @@ export async function login(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const res = await axios.post("http://chatserver:8080/login", {
+  const res = await axios.post("http://localhost:8080/login", {
     username: username,
     password: password,
   });
@@ -53,7 +53,7 @@ export async function login(
     return false;
   }
 
-  cookies().set("userData", JSON.stringify(usr), { httpOnly: true });
+  cookies().set("userData", JSON.stringify(usr), { httpOnly: false });
   return true;
 }
 
@@ -61,7 +61,7 @@ export async function signup(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const res = await axios.post("http://chatserver:8080/signup", {
+  const res = await axios.post("http://localhost:8080/signup", {
     username: username,
     password: password,
   });
@@ -76,6 +76,6 @@ export async function signup(
     return false;
   }
 
-  cookies().set("userData", JSON.stringify(usr), { httpOnly: true });
+  cookies().set("userData", JSON.stringify(usr), { httpOnly: false });
   return true;
 }

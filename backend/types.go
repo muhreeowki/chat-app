@@ -5,18 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type JSONServerFunc func(w http.ResponseWriter, r *http.Request) *JSONServerError
-
-type CustomClaims struct {
-	Username string
-	Password string
-	jwt.RegisteredClaims
-}
 
 type JSONServerError struct {
 	error string
@@ -46,12 +37,6 @@ func UnmarshalUserJSON(r *http.Request) (*User, error) {
 		return nil, err
 	}
 	return usr, nil
-}
-
-type Message struct {
-	Datetime time.Time `json:"datetime"`
-	Payload  string    `json:"payload"`
-	Sender   string    `json:"sender"`
 }
 
 func UnmarshalMessage(data []byte) (*Message, error) {

@@ -8,11 +8,11 @@ import (
 )
 
 type Storage interface {
+	StoreMessage(*Message) error
 	GetMessages() ([]*Message, error)
-	CreateMessage(*Message) error
+	CreateUser(*User) error
 	GetUser(string) (*User, error)
 	GetUsers() ([]*UserJSONResponse, error)
-	CreateUser(*User) error
 }
 
 type PostgresStore struct {
@@ -59,9 +59,10 @@ func (s *PostgresStore) initUsersTable() error {
 
 func (s *PostgresStore) initMessagesTable() error {
 	createMessageTableQuery := `CREATE TABLE IF NOT EXISTS messages (
-    id SERIAL NOT NULL PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     payload TEXT NOT NULL,
     sender TEXT NOT NULL,
+    recipient TEXT,
     datetime TIMESTAMP DEFAULT NOW()
   )`
 	_, err := s.db.Exec(createMessageTableQuery)
@@ -106,12 +107,12 @@ func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
 	return usrs, nil
 }
 
-func (s *PostgresStore) CreateMessage(msg *Message) error {
-	query := `INSERT INTO messages (payload, sender, datetime) VALUES ($1, $2, $3) RETURNING payload, sender, datetime`
-	row := s.db.QueryRow(query, msg.Payload, msg.Sender, msg.Datetime)
+func (s *PostgresStore) StoreMessage(msg *Message) error {
+	query := `INSERT INTO messages (payload, sender, recipient, datetime) VALUES ($1, $2, $3, $4) RETURNING payload, sender, recipient, datetime`
+	row := s.db.QueryRow(query, msg.Payload, msg.Sender, msg.Recipient, msg.Datetime)
 	respMsg := new(Message)
-	if err := row.Scan(&respMsg.Payload, &respMsg.Sender, &respMsg.Datetime); err != nil {
-		return fmt.Errorf("failed to creat new message")
+	if err := row.Scan(&respMsg.Payload, &respMsg.Sender, &respMsg.Recipient, &respMsg.Datetime); err != nil {
+		return fmt.Errorf("failed to create new message: %s", err.Error())
 	}
 	return nil
 }

@@ -35,10 +35,16 @@ func VerifyPassword(password, hash string) bool {
 	return err == nil
 }
 
+type AuthClaims struct {
+	Username string
+	Password string
+	jwt.RegisteredClaims
+}
+
 func createJWT(usr *User) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	// Create JWT
-	claims := &CustomClaims{
+	claims := &AuthClaims{
 		Username: usr.Username,
 		Password: usr.Password,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -55,7 +61,7 @@ func createJWT(usr *User) (string, error) {
 func validateJWT(tokenString string) (*jwt.Token, error) {
 	secret := os.Getenv("JWT_SECRET")
 
-	return jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+	return jwt.ParseWithClaims(tokenString, &AuthClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unnexpected signing method: %s", t.Method.Alg())
 		}
