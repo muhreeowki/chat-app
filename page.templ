@@ -1,0 +1,41 @@
+package main
+
+templ JsonPage(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<link rel="stylesheet" href="/assets/styles.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<title>{ title }</title>
+		</head>
+		<body class="h-full bg-yellow-50 font-mono">
+			<main class="max-w-lg mx-auto my-2">
+				<h1 class="text-8xl font-black text-center m-0 pb-2">Welcome to { title }</h1>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ WsPage(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<link rel="stylesheet" href="/assets/styles.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/htmx-ext-ws@2.0.2" integrity="sha384-vuKxTKv5TX/b3lLzDKP2U363sOAoRo5wSvzzc3LJsbaQRSBSS+3rKKHcOx5J8doU" crossorigin="anonymous"></script>
+			<title>{ title }</title>
+		</head>
+		<body hx-ext="ws" class="h-full bg-yellow-50 font-mono">
+			<main ws-connect="/chatroom" class="max-w-lg mx-auto my-2">
+				<h1 class="text-8xl font-black text-center m-0 pb-2">Welcome to { title }</h1>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}

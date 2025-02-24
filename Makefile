@@ -1,14 +1,11 @@
-build-backend: backend/
-	@cd backend && go build -o bin/mchat
+build:
+	@go build -o bin/mchat
 
-backend: build-backend
-	@cd backend && ./bin/mchat
+clean-db:
+	@docker stop postgres && docker rm postgres && docker run --name postgres -e POSTGRES_PASSWORD=mchat -p 5432:5432 -d postgres
 
-build-client: client/
-	@cd client && npm install && npm run build
-
-client: build-client
-	@cd client && npm run start
+run: build
+	@./bin/mchat
 
 docker-build-backend:
 	@cd backend && docker build -t chatserver:1 .

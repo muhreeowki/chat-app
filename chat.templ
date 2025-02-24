@@ -1,0 +1,19 @@
+package main
+
+templ Chat(messages []*Message) {
+	@JsonPage("REST Mchat") {
+		<div>
+			@ChatFeed(messages)
+			@MessageBox()
+		</div>
+	}
+}
+
+templ WsChat(messages []*Message) {
+	@WsPage("WebSocket Mchat") {
+		<div>
+			@ChatFeed(messages)
+			@MessageBox()
+		</div>
+	}
+}
