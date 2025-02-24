@@ -109,7 +109,7 @@ func (manager *ClientManager) Start() {
 
 		case msg := <-manager.broadcast:
 			buf := new(bytes.Buffer)
-			ChatMessage(msg).Render(context.Background(), buf)
+			WsChatMessage(msg).Render(context.Background(), buf)
 			for client := range manager.clients {
 				select {
 				case client.send <- buf.Bytes():

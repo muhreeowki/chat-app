@@ -60,7 +60,8 @@ func NewClientServer(listenAddr string, store Storage) *ClientServer {
 
 func (s *ClientServer) Run() error {
 	r := http.NewServeMux()
-	r.HandleFunc("GET /{$}", s.HandleHome)
+
+	r.HandleFunc("GET /chat", s.HandleHome)
 	r.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("assets"))))
 	r.HandleFunc("/chatroom", s.HandleWSConn)
 	r.HandleFunc("POST /messages", s.HandlePostMessages)

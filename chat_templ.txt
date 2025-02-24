@@ -1,0 +1,4 @@
+<div>
+</div>
+<div hx-ext=\"ws\" ws-connect=\"/chatroom\">
+</div>

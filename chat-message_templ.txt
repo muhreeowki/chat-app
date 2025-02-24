@@ -1,0 +1,6 @@
+<div class=\"w-full flex flex-row gap-4 items-center p-4 border rounded-md\"><h4 class=\"font-semibold\">
+</h4><p class=\"text-md font-light\">
+</p></div>
+<div id=\"feed\" hx-swap-oob=\"beforeend\" class=\"w-full flex flex-row gap-4 items-center p-4 border rounded-md\"><h4 class=\"font-semibold\">
+</h4><p class=\"text-md font-light\">
+</p></div>
