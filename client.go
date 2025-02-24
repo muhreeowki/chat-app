@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -59,12 +61,18 @@ func NewClientServer(listenAddr string, store Storage) *ClientServer {
 }
 
 func (s *ClientServer) Run() error {
-	r := http.NewServeMux()
+	r := gin.Default()
 
-	r.HandleFunc("GET /chat", s.HandleHome)
-	r.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("assets"))))
-	r.HandleFunc("/chatroom", s.HandleWSConn)
-	r.HandleFunc("POST /messages", s.HandlePostMessages)
+	r.GET("/", s.HandleHome)
+	r.GET("/chatroom", s.HandleWSConn)
+	r.POST("/messages", s.HandleHome)
+	r.Static("/assets", "./assets/")
+
+	// mux := http.NewServeMux()
+	// mux.HandleFunc("GET /chat", s.HandleHome)
+	// mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("assets"))))
+	// mux.HandleFunc("/chatroom", s.HandleWSConn)
+	// mux.HandleFunc("POST /messages", s.HandlePostMessages)
 
 	go s.clientManager.Start()
 
@@ -72,8 +80,9 @@ func (s *ClientServer) Run() error {
 	return http.ListenAndServe(s.listenAddr, r)
 }
 
-func (s *ClientServer) HandleWSConn(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+// func (s *ClientServer) HandleWSConn(w http.ResponseWriter, r *http.Request) {
+func (s *ClientServer) HandleWSConn(c *gin.Context) {
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.logger.Printf("failed to establish connection.")
 		return
@@ -107,32 +116,35 @@ func (s *ClientServer) HandleWSConn(w http.ResponseWriter, r *http.Request) {
 	}(client)
 }
 
-func (s *ClientServer) HandlePostMessages(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+// func (s *ClientServer) HandlePostMessages(w http.ResponseWriter, r *http.Request) {
+func (s *ClientServer) HandlePostMessages(c *gin.Context) {
+	err := c.Request.ParseForm()
 	if err != nil {
 		s.logger.Println(err)
 	}
 	msg := &Message{
-		Payload: r.Form.Get("payload"),
-		Sender:  r.Form.Get("sender"),
+		Payload: c.Request.Form.Get("payload"),
+		Sender:  c.Request.Form.Get("sender"),
 	}
 	if msg.Payload == "" {
-		w.Write([]byte("empty message"))
+		// w.Write([]byte("empty message"))
+		c.Error(fmt.Errorf("empty message"))
 		return
 	}
 	if err := s.store.StoreMessage(msg); err != nil {
 		s.logger.Println(err)
 	}
-	if err := ChatMessage(msg).Render(r.Context(), w); err != nil {
+	if err := ChatMessage(msg).Render(c.Request.Context(), c.Writer); err != nil {
 		s.logger.Println(err)
 	}
 	s.logger.Printf("New MSG: %+v", msg)
 }
 
-func (s *ClientServer) HandleHome(w http.ResponseWriter, r *http.Request) {
+// func (s *ClientServer) HandleHome(w http.ResponseWriter, r *http.Request) {
+func (s *ClientServer) HandleHome(c *gin.Context) {
 	messages, err := s.store.GetMessages()
 	if err != nil {
 		s.logger.Println(err)
 	}
-	WsChat(messages).Render(r.Context(), w)
+	WsChat(messages).Render(c.Request.Context(), c.Writer)
 }
