@@ -1,9 +1,17 @@
 package main
 
 templ MessageBox() {
-	<form hx-target="#feed" hx-swap="beforeend" hx-post="/messages" class="w-full mt-6 flex flex-row gap-3">
-		<input class="w-full border rounded-md p-3" id="sender" name="sender" type="text" placeholder="Enter your name"/>
-		<input class="w-full border rounded-md p-6" id="payload" name="payload" type="text" placeholder="Enter a message"/>
-		<button class="rounded-md p-3 text-white bg-black" type="submit">Send</button>
-	</form>
+<form hx-target="#feed" hx-swap="beforeend" hx-post="/messages" class="w-full mt-6 flex flex-row gap-3">
+  <input class="w-full border rounded-md p-3" id="sender" name="sender" type="text" placeholder="Enter your name" />
+  <input class="w-full border rounded-md p-6" id="payload" name="payload" type="text" placeholder="Enter a message" />
+  <button class="rounded-md p-3 text-white bg-black" type="submit">Send</button>
+</form>
+}
+
+templ WsMessageBox() {
+<form ws-send class="w-full mt-6 flex flex-row gap-3" hx-reset-on-success>
+  <input class="w-full border rounded-md p-3" id="sender" name="sender" type="text" placeholder="Enter your name" />
+  <input class="w-full border rounded-md p-6" id="payload" name="payload" type="text" placeholder="Enter a message" />
+  <button type="submit" class="rounded-md p-3 text-white bg-black">Send WS</button>
+</form>
 }

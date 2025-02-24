@@ -11,9 +11,9 @@ templ Chat(messages []*Message) {
 
 templ WsChat(messages []*Message) {
 	@WsPage("WebSocket Mchat") {
-		<div>
+		<div hx-ext="ws" ws-connect="/chatroom">
 			@ChatFeed(messages)
-			@MessageBox()
+			@WsMessageBox()
 		</div>
 	}
 }
