@@ -1,2 +1,0 @@
-<div id=\"feed\" class=\"w-full grid gap-3 overflow-auto border rounded-md p-4\" style=\"height:350px; overflow:scroll\">
-</div>
