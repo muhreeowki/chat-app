@@ -1,0 +1,28 @@
+package templates
+
+import "time"
+
+type Message struct {
+	Sender    string    `json:"sender,omitempty"`
+	Recipient string    `json:"recipient,omitempty"`
+	Payload   string    `json:"payload,omitempty"`
+	Datetime  time.Time `json:"datetime,omitempty"`
+}
+
+templ Chat(messages []*Message) {
+	@JsonPage("REST Mchat") {
+		<div>
+			@ChatFeed(messages)
+			@MessageBox()
+		</div>
+	}
+}
+
+templ WsChat(messages []*Message) {
+	@WsPage("WebSocket Mchat") {
+		<div hx-ext="ws" ws-connect="/chatroom">
+			@ChatFeed(messages)
+			@WsMessageBox()
+		</div>
+	}
+}

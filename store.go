@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/muhreeowki/mchat/templates"
 )
 
 type Storage interface {
-	StoreMessage(*Message) error
-	GetMessages() ([]*Message, error)
+	StoreMessage(*templates.Message) error
+	GetMessages() ([]*templates.Message, error)
 	CreateUser(*User) error
 	GetUser(string) (*User, error)
-	GetUsers() ([]*UserJSONResponse, error)
+	GetUsers() ([]*User, error)
 }
 
 type PostgresStore struct {
@@ -88,16 +90,16 @@ func (s *PostgresStore) GetUser(username string) (*User, error) {
 	return usr, nil
 }
 
-func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
+func (s *PostgresStore) GetUsers() ([]*User, error) {
 	query := `SELECT id, username FROM users`
 	rows, err := s.db.Query(query)
 	if err != nil {
 		log.Printf("get users error: %s\n", err.Error())
 		return nil, fmt.Errorf("failed to get users")
 	}
-	usrs := []*UserJSONResponse{}
+	usrs := []*User{}
 	for rows.Next() {
-		usr := new(UserJSONResponse)
+		usr := new(User)
 		if err := rows.Scan(&usr.Id, &usr.Username); err != nil {
 			log.Printf("get users error: %s\n", err)
 			continue
@@ -107,25 +109,25 @@ func (s *PostgresStore) GetUsers() ([]*UserJSONResponse, error) {
 	return usrs, nil
 }
 
-func (s *PostgresStore) StoreMessage(msg *Message) error {
+func (s *PostgresStore) StoreMessage(msg *templates.Message) error {
 	query := `INSERT INTO messages (payload, sender, recipient, datetime) VALUES ($1, $2, $3, $4) RETURNING payload, sender, recipient, datetime`
 	row := s.db.QueryRow(query, msg.Payload, msg.Sender, msg.Recipient, msg.Datetime)
-	respMsg := new(Message)
+	respMsg := new(templates.Message)
 	if err := row.Scan(&respMsg.Payload, &respMsg.Sender, &respMsg.Recipient, &respMsg.Datetime); err != nil {
 		return fmt.Errorf("failed to create new message: %s", err.Error())
 	}
 	return nil
 }
 
-func (s *PostgresStore) GetMessages() ([]*Message, error) {
+func (s *PostgresStore) GetMessages() ([]*templates.Message, error) {
 	query := `SELECT payload, sender, datetime FROM messages`
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get messages")
 	}
-	messages := []*Message{}
+	messages := []*templates.Message{}
 	for rows.Next() {
-		msg := new(Message)
+		msg := new(templates.Message)
 		if err := rows.Scan(&msg.Payload, &msg.Sender, &msg.Datetime); err != nil {
 			fmt.Printf("get messages error: %s\n", err)
 			continue
